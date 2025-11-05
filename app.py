@@ -1,9 +1,11 @@
 from flask import Flask, request, jsonify, render_template
 import firebase_admin
 from firebase_admin import credentials, db
+from flask_cors import CORS
 import os, json
 
 app = Flask(__name__)
+CORS(app)  # ✅ Enable CORS for all domains and routes
 
 # Initialize Firebase
 if os.path.exists('serviceAccountKey.json'):
@@ -14,19 +16,15 @@ else:
         raise RuntimeError("Firebase credentials not found. Provide serviceAccountKey.json or FIREBASE_SERVICE_ACCOUNT env var.")
     cred = credentials.Certificate(json.loads(sa_json))
 
-firebase_db_url = os.environ.get('FIREBASE_DB_URL', 
-    'https://student-crud-36bc3-default-rtdb.firebaseio.com/')
+firebase_db_url = os.environ.get('FIREBASE_DB_URL', 'https://student-crud-36bc3-default-rtdb.firebaseio.com/')
 firebase_admin.initialize_app(cred, {'databaseURL': firebase_db_url})
 
 students_ref = db.reference('students')
 
-# ---------- UI ROUTE ----------
 @app.route('/')
 def home():
-    # Render the HTML page from templates/index.html
     return render_template('index.html')
 
-# ---------- API ROUTES ----------
 @app.route('/students', methods=['POST'])
 def create_student():
     data = request.json
@@ -56,7 +54,5 @@ def delete_student(student_id):
     students_ref.child(student_id).delete()
     return jsonify({"id": student_id})
 
-# ---------- MAIN ENTRY ----------
 if __name__ == '__main__':
-    # Run on all interfaces, useful for testing from same network
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
